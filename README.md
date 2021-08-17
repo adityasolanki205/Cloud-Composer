@@ -1,13 +1,9 @@
-# Batch Processing Pipeline using DataFlow
-This is one of the part of **Introduction to Apache Beam using Python** Repository. Here we will try to learn basics of Apache Beam to create **Batch** pipelines. We will learn step by step how to create a batch pipeline using [German Credit Risk](https://www.kaggle.com/uciml/german-credit). The complete process is divided into 7 parts:
+# Cloud Composer
+This is one of the part of **Introduction to Cloud Composer** Repository. Here we will try to learn basics of Apache Ariflow to create Dags. We will learn step by step how to create a batch pipeline using [German Credit Risk](https://www.kaggle.com/uciml/german-credit). The complete process is divided into 7 parts:
 
-1. **Reading the data**
-2. **Parsing the data**
-3. **Filtering the data**
-4. **Performing Type Convertion**
-5. **Data wrangling**
-6. **Deleting Unwanted Columns**
-7. **Inserting Data in Bigquery**
+1. **Setting up the Cloud Composer environment**
+2. **Setting up Dataflow job to run in Dag**
+3. **Running a Dag from Airflow**
 
 
 ## Motivation
@@ -23,12 +19,14 @@ For the last two years, I have been part of a great learning curve wherein I hav
 - [Google DataFlow](https://cloud.google.com/dataflow)
 - [Google Cloud Storage](https://cloud.google.com/storage)
 - [Google Bigquery](https://cloud.google.com/bigquery)
+- [Google Cloud Composer](https://cloud.google.com/composer/docs/concepts/overview)
+- [Apache Airflow](https://airflow.apache.org/docs/apache-airflow/stable/)
 
 ## Cloning Repository
 
 ```bash
     # clone this repo:
-    git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
+    git clone https://github.com/adityasolanki205/Cloud-Composer.git
 ```
 
 ## Pipeline Construction
@@ -41,32 +39,28 @@ Below are the steps to setup the enviroment and run the codes:
 
 ```bash
     # clone this repo:
-    git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
+    git clone https://github.com/adityasolanki205/Cloud-Composer.git
 ```
 
-3. **Reading the Data**: Now we will go step by step to create a pipeline starting with reading the data. The data is read using **beam.io.ReadFromText()**. Here we will just read the input values and save it in a file. The output is stored in text file named simpleoutput.
+3. **Setting up Dataflow job**: Now we will setup the whole Dataflow job that will fetch data from GCS bucket and populate data in Bigquery. Consider using the repository [Batch Pipeline Using Dataflow](https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow). In brief, follow the commands below to setup and save the dataflow template
 
-```python
-    def run(argv=None, save_main_session=True):
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-          '--input',
-          dest='input',
-          help='Input file to process')
-        parser.add_argument(
-          '--output',
-          dest='output',
-          default='../output/result.txt',
-          help='Output file to write results to.')
-        known_args, pipeline_args = parser.parse_known_args(argv)
-        options = PipelineOptions(pipeline_args)
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                         | beam.io.ReadFromText(known_args.input)
-                         | 'Writing output' >> beam.io.WriteToText(known_args.output)
-                   ) 
-    if __name__ == '__main__':
-        run()
+```
+    1. Copy the repository in Cloud SDK using below command:
+    git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
+    
+    2. Create a Storage Bucket in asia-east1 by the name batch-pipeline-testing and 
+       two sub folders Temp and Stage.
+    
+    3. Copy the data file in the cloud Bucket using the below command
+    cd Batch-Processing-Pipeline-using-DataFlow/data
+    gsutil cp german.data gs://batch-pipeline-testing/
+    
+    4. Create a Dataset in asia-east1 by the name GermanCredit
+    
+    5. Create a table in GermanCredit dataset by the name GermanCreditTable
+    
+    6. Install Apache Beam on the SDK using below command
+    pip3 install apache_beam[gcp]
 ``` 
 
 4. **Parsing the data**: After reading the input file we will split the data using split(). Data is segregated into different columns to be used in further steps. We will **ParDo()** to create a split function. The output of this step is present in SplitPardo text file.
@@ -397,3 +391,4 @@ To test the code we need to do the following:
 1. Akash Nimare's [README.md](https://gist.github.com/akashnimare/7b065c12d9750578de8e705fb4771d2f#file-readme-md)
 2. [Apache Beam](https://beam.apache.org/documentation/programming-guide/#triggers)
 3. [Building Data Processing Pipeline With Apache Beam, Dataflow & BigQuery](https://towardsdatascience.com/apache-beam-pipeline-for-cleaning-batch-data-using-cloud-dataflow-and-bigquery-f9272cd89eba)
+4. [How to Trigger DataFlow Jobs on Cloud Composer](https://sparks.mediaagility.com/how-to-run-dataflow-jobs-on-cloud-composer-with-cloud-composer-set-up-steps-f491efe29328)
