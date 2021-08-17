@@ -46,21 +46,36 @@ Below are the steps to setup the enviroment and run the codes:
 
 ```
     1. Copy the repository in Cloud SDK using below command:
-    git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
     
-    2. Create a Storage Bucket in asia-east1 by the name batch-pipeline-testing and 
-       two sub folders Temp and Stage.
+       git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
     
-    3. Copy the data file in the cloud Bucket using the below command
-    cd Batch-Processing-Pipeline-using-DataFlow/data
-    gsutil cp german.data gs://batch-pipeline-testing/
+    2. Create a Storage Bucket in us-central1 by the name batch-pipeline-testing 
+       and three sub folders Temp, Template and Stage.
     
-    4. Create a Dataset in asia-east1 by the name GermanCredit
+    3. Copy the data file in the cloud Bucket using the below command:
+    
+       cd Batch-Processing-Pipeline-using-DataFlow/data
+       gsutil cp german.data gs://batch-pipeline-testing/
+    
+    4. Create a Dataset in us-central1 by the name GermanCredit
     
     5. Create a table in GermanCredit dataset by the name GermanCreditTable
     
-    6. Install Apache Beam on the SDK using below command
-    pip3 install apache_beam[gcp]
+    6. Install Apache Beam on the SDK using below command:
+    
+       pip3 install apache_beam[gcp]
+       
+    7. Run the command below to in cloud shell to save the template in Template folder of the GCS created
+       python3 batch-pipeline.py \
+       --runner DataFlowRunner \
+       --project <Your Project Name> \
+       --temp_location gs://batch-pipeline-testing/Temp \
+       --staging_location gs://batch-pipeline-testing/Stage \
+       --input gs://batch-pipeline-testing/Batch/german.data \
+       --region asia-east1 \
+       --job_name germananalysis \
+       --template_location gs://batch-pipeline-testing/Template/batch-pipeline-template
+    
 ``` 
 
 4. **Parsing the data**: After reading the input file we will split the data using split(). Data is segregated into different columns to be used in further steps. We will **ParDo()** to create a split function. The output of this step is present in SplitPardo text file.
