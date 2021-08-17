@@ -42,18 +42,16 @@ Below are the steps to setup the enviroment and run the codes:
     git clone https://github.com/adityasolanki205/Cloud-Composer.git
 ```
 
-3. **Setting up Dataflow job**: Now we will setup the whole Dataflow job that will fetch data from GCS bucket and populate data in Bigquery. Consider using the repository [Batch Pipeline Using Dataflow](https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow). In brief, follow the commands below to setup and save the dataflow template
+3. **Setting up Dataflow job**: Now we will setup the whole Dataflow job that will fetch data from GCS bucket and populate data in Bigquery. Consider using the repository [Batch Pipeline Using Dataflow](https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow). In brief, follow the commands below to setup and save the dataflow template.
 
 ```
     1. Copy the repository in Cloud SDK using below command:
-    
        git clone https://github.com/adityasolanki205/Batch-Processing-Pipeline-using-DataFlow.git
     
     2. Create a Storage Bucket in us-central1 by the name batch-pipeline-testing 
        and three sub folders Temp, Template and Stage.
     
     3. Copy the data file in the cloud Bucket using the below command:
-    
        cd Batch-Processing-Pipeline-using-DataFlow/data
        gsutil cp german.data gs://batch-pipeline-testing/
     
@@ -62,7 +60,6 @@ Below are the steps to setup the enviroment and run the codes:
     5. Create a table in GermanCredit dataset by the name GermanCreditTable
     
     6. Install Apache Beam on the SDK using below command:
-    
        pip3 install apache_beam[gcp]
        
     7. Run the command below to in cloud shell to save the template in Template folder of the GCS created
@@ -78,214 +75,141 @@ Below are the steps to setup the enviroment and run the codes:
     
 ``` 
 
-4. **Parsing the data**: After reading the input file we will split the data using split(). Data is segregated into different columns to be used in further steps. We will **ParDo()** to create a split function. The output of this step is present in SplitPardo text file.
+4. **Setting up Cloud Composer Environment**: Cloud Composer uses Apache Airflow to run the Dags. So we will use the setup below to create the Environment. 
 
-```python
-    class Split(beam.DoFn):
-        #This Function Splits the Dataset into a dictionary
-        def process(self, element): 
-            Existing_account,
-            Duration_month,
-            Credit_history,
-            Purpose,
-            Credit_amount,
-            Saving,
-            Employment_duration,
-            Installment_rate,
-            Personal_status,
-            Debtors,
-            Residential_Duration,
-            Property,
-            Age,
-            Installment_plans,
-            Housing,
-            Number_of_credits
-            Job,
-            Liable_People,
-            Telephone,
-            Foreign_worker,
-            Classification = element.split(' ')
-        return [{
-            'Existing_account': str(Existing_account),
-            'Duration_month': str(Duration_month),
-            'Credit_history': str(Credit_history),
-            'Purpose': str(Purpose),
-            'Credit_amount': str(Credit_amount),
-            'Saving': str(Saving),
-            'Employment_duration':str(Employment_duration),
-            'Installment_rate': str(Installment_rate),
-            'Personal_status': str(Personal_status),
-            'Debtors': str(Debtors),
-            'Residential_Duration': str(Residential_Duration),
-            'Property': str(Property),
-            'Age': str(Age),
-            'Installment_plans':str(Installment_plans),
-            'Housing': str(Housing),
-            'Number_of_credits': str(Number_of_credits),
-            'Job': str(Job),
-            'Liable_People': str(Liable_People),
-            'Telephone': str(Telephone),
-            'Foreign_worker': str(Foreign_worker),
-            'Classification': str(Classification)
-        }]
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split())
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
-
-    if __name__ == '__main__':
-        run()
+```
+    1. Name: Provide the name of the Environment
+    
+    2. Location: Provide the location where the Dags have to run. We have taken us-central1
+    
+    3. Machine-Type: Opt any machine type you want. If you are using Google Free Tier account, 
+                     then opt for n1-standard-2
+    
+    4. Disk Size: We will use 50 GB
+    
+    5. Image Version: We will use the latest version of apache Airflow: Composer-1.17.0-preview-9-airflow-2.1.1
+    
+    6. Python Version: We will use python version '3'
+    
+    7. Click on Create
 ``` 
 
-5. **Filtering the data**: Now we will clean the data by removing all the rows having Null values from the dataset. We will use **Filter()** to return only valid rows with no Null values. Output of this step is saved in the file named Filtered_data.
+5. **Creating Configuration file**: Now we create Python files to be used to create the DAGs. First we will create the file called Config.py. This will contain all the configuration related parameters. Save this file by the name Config.py.
 
 ```python
-    ...
-    def Filter_Data(data):
-    #This will remove rows the with Null values in any one of the columns
-        return data['Purpose'] !=  'NULL' 
-        and len(data['Purpose']) <= 3  
-        and data['Classification'] !=  'NULL' 
-        and data['Property'] !=  'NULL' 
-        and data['Personal_status'] != 'NULL' 
-        and data['Existing_account'] != 'NULL' 
-        and data['Credit_amount'] != 'NULL' 
-        and data['Installment_plans'] != 'NULL'
-    ...
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data)          
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
-
-    if __name__ == '__main__':
-        run()
+    #Project Configurations
+    project_name=<your project name>
+    
+    #Zone in which the Dag(Dataflow job) has to run
+    zone = 'us-central1-a'
+    
+    #Name of the Bucket where Dataflow Template is saved
+    template_bucket = 'batch-pipeline-testing'
+    
+    #Name of the Dataflow pipeline
+    job_name ='batch-pipeline'
+    
+    #Name of input file and its path to GCS bucket
+    input_data ='gs://{bucket}/german.data'.format(bucket=template_bucket)
+    
+    #Path of the GCS bucket where Dataflow Template is saved
+    template_gcs_path='gs://{bucket}/Template/batch-pipeline-template'.format(bucket=template_bucket)
+    
+    #Temprory GCS path location
+    temp_location='gs://{bucket}/Temp'.format(bucket=template_bucket)
 ```
 
-6. **Performing Type Convertion**: After Filtering we will convert the datatype of numeric columns from String to Int or Float datatype. Here we will use **Map()** to apply the Convert_Datatype(). The output of this step is saved in Convert_datatype text file.
+6. **Dag Arguments file**: Now we will create the file that will contain all the Dag Arguments that are required by the Apache Airflow to run it. This File will return Body of the parametres required to run the dag. Save this file by the name dag_arguments.py.
 
 ```python
-    ... 
-    def Convert_Datatype(data):
-        #This will convert the datatype of columns from String to integers or Float values
-        data['Duration_month'] = int(data['Duration_month']) if 'Duration_month' in data else None
-        data['Credit_amount'] = float(data['Credit_amount']) if 'Credit_amount' in data else None
-        data['Installment_rate'] = int(data['Installment_rate']) if 'Installment_rate' in data else None
-        data['Residential_Duration'] = int(data['Residential_Duration']) if 'Residential_Duration' in data else None
-        data['Age'] = int(data['Age']) if 'Age' in data else None
-        data['Number_of_credits'] = int(data['Number_of_credits']) if 'Number_of_credits' in data else None
-        data['Liable_People'] = int(data['Liable_People']) if 'Liable_People' in data else None
-        data['Classification'] =  int(data['Classification']) if 'Classification' in data else None
-    ...
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-            Converted_data = (filtered_data
-                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype)
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
-
-    if __name__ == '__main__':
-        run()
-```
-
-7. **Data wrangling**: Now we will do some data wrangling to make some more sense of the data in some columns. For Existing_account contain 3 characters. First character is an Aplhabet which signifies Month of the year and next 2 characters are numeric which signify days. So here as well we will use Map() to wrangle data. The output of this dataset is present by the name DataWrangle.
-
-```python
-    ... 
-    def Data_Wrangle(data):
-    #Here we perform data wrangling where Values in columns are converted to make more sense
-        Month_Dict = {
-        'A':'January',
-        'B':'February',
-        'C':'March',
-        'D':'April',
-        'E':'May',
-        'F':'June',
-        'G':'July',
-        'H':'August',
-        'I':'September',
-        'J':'October',
-        'K':'November',
-        'L':'December'
+    import Config
+    class DAGArgs():
+        default_args = {
+                'owner': 'airflow',
+                'depends_on_past': False,
+                'start_date':'16-08-2021',
+                'email': ['airflow@example.com'],
+                'email_on_failure': False,
+                'email_on_retry': False,
+                'retries': 3,
+                'retry_delay': timedelta(minutes=5),
+                'execution_timeout': timedelta(hours=5),
         }
-        existing_account = list(data['Existing_account'])
-        for i in range(len(existing_account)):
-            month = Month_Dict[existing_account[0]]
-            days = int(''.join(existing_account[1:]))
-            data['Month'] = month
-            data['days'] = days
-        purpose = list(data['Purpose'])
-        for i in range(len(purpose)):
-            file_month = Month_Dict[purpose[0]]
-            version = int(''.join(purpose[1:]))
-            data['File_Month'] = file_month
-            data['Version'] = version
-        return data
-    ...
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-            Converted_data = (filtered_data
-                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-            Wrangled_data = (Converted_data
-                     | 'Wrangling Data' >> beam.Map(Data_Wrangle)                  
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
-
-    if __name__ == '__main__':
-        run()
+        def __init__(self, *args, **kwargs):
+            print("in DAG Arguments")
+        def get_daily_trigger_dataflow_body(job_name,temp_location, zone, input_data):
+            body = {
+                "jobName": "{jobname}".format(jobname=job_name),
+                "parameters": {
+                    'runner': 'DataFlowRunner',
+                },
+                "environment": {
+                    "tempLocation": temp_location,
+                    "zone": zone
+                }
+            }
+            return body
 ```
 
-8. **Delete Unwanted Columns**: After converting certain columns to sensable data we will remove redundant columns from the dataset. Output of this is present with the file name Delete_Unwanted_Columns text file.
+7. **Daily Sync dag**: Now we will create the Dag file that will be used to initiate the Dag. Here we will initiate one single Dag which will be a Dataflow job. Save this file by the name daily_sync_dag.py
 
 ```python
-    ...
-    def Del_Unwanted(data):
-        #Here we delete redundant columns
-        del data['Purpose']
-        del data['Existing_account']
-        return data
-    ...
-    def run(argv=None, save_main_session=True):
-        ...
-        with beam.Pipeline(options=PipelineOptions()) as p:
-            data = (p 
-                     | beam.io.ReadFromText(known_args.input) )
-            parsed_data = (data 
-                     | 'Parsing Data' >> beam.ParDo(Split()))
-            filtered_data = (parsed_data
-                     | 'Filtering Data' >> beam.Filter(Filter_Data))
-            Converted_data = (filtered_data
-                     | 'Convert Datatypes' >> beam.Map(Convert_Datatype))
-            Wrangled_data = (Converted_data
-                     | 'Wrangling Data' >> beam.Map(Data_Wrangle))    
-            Cleaned_data = (Wrangled_data
-                     | 'Delete Unwanted Columns' >> beam.Map(Del_Unwanted)                 
-                     | 'Writing output' >> beam.io.WriteToText(known_args.output))
+    import airflow
+    from airflow import DAG
+    from airflow import models
+    from airflow.operators.python_operator import PythonOperator
+    from dag_arguments import DAGArgs
+    from googleapiclient.discovery import build
+    from oauth2client.client import GoogleCredentials
+    import Config
 
-    if __name__ == '__main__':
-        run()    
+    def daily_sync_etl():
+        try:
+            job_name = Config.job_name
+            temp_location = Config.temp_location
+            zone = Config.zone
+            input_data = Config.input_data
+            #input_param_name = Config.input_param_name
+            gcs_path = Config.template_gcs_path
+            
+            body = DAGArgs.get_daily_trigger_dataflow_body(job_name,temp_location,zone,input_data)
+            
+            credentials = GoogleCredentials.get_application_default()
+            
+            service = build('dataflow', 'v1b3', credentials=credentials,cache_discovery=False)
+            request = service.projects().templates().launch(projectId=Config.project_name
+            ,gcsPath=Config.template_gcs_path, body=body)
+            
+            response = request.execute()
+            
+            print("-----execute function have been called-------")
+            print(response)
+        except Exception as ex:
+            print(['Exception', ex])
+
+    try:
+        with models.DAG(
+                'GCS_to_Bigquery_dag',
+                default_args=DAGArgs().default_args,
+                description='DAG for Hourly sync to cloud sql',
+                max_active_runs=1,
+                concurrency=4,
+                catchup = False,
+                schedule_interval='@hourly'
+            ) as dag:
+                task1 = PythonOperator(
+                        task_id='daily-sync-etl',
+                        python_callable=daily_sync_etl,
+                        dag = dag)
+    except IndexError as ex:
+        logging.debug("Exception",str(ex))
+
+    task1
 ```
+
+8. **Finally uploading all the files in Dags Repository**: All the .py files have to be uploaded to DAGs Folder visible on the Cloud composer Environments Screen. 
+
+![](data/DagsFolder.JPG)
 
 9. **Inserting Data in Bigquery**: Final step in the Pipeline it to insert the data in Bigquery. To do this we will use **beam.io.WriteToBigQuery()** which requires Project id and a Schema of the target table to save the data. 
 
